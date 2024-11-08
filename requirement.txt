@@ -1,0 +1,11 @@
+python==3.9.13
+pyspark==3.3.2
+apache-airflow[gcp]
+apache-beam[gcp]
+google-cloud-storage
+google-cloud-bigquery
+numpy
+pandas
+
+
+
