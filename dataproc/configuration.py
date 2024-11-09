@@ -16,7 +16,7 @@ from datetime import datetime
 
 
 ## google service account key
-GOOGLE_APPLICATION_CREDENTIALS = r'C:\Users\HP\OneDrive\Desktop\earthquake_project\key\delta-compass-440906-dca1fe6ea297.json'
+GOOGLE_APPLICATION_CREDENTIALS = r'C:\Users\HP\Desktop\data_projects\earthquake\key\delta-compass-440906-dca1fe6ea297.json'
 
 ## url for monthly basis
 

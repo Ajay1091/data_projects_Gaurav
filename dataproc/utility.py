@@ -37,8 +37,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 ### Google cloud access key
 # Set the environment variable for Google Cloud credentials
-# os.environ[
-#     'GOOGLE_APPLICATION_CREDENTIALS'] = conf.GOOGLE_APPLICATION_CREDENTIALS
+os.environ[
+    'GOOGLE_APPLICATION_CREDENTIALS'] = conf.GOOGLE_APPLICATION_CREDENTIALS
 
 
 ### class for reading data from api
@@ -188,14 +188,14 @@ class EarthquakeDataFrameCreation:
                 properties = value['properties']
 
                 # Extract geometry coordinates
-                geometry = {
+                properties['geometry'] = {
                     'longitude': value['geometry']['coordinates'][0],
                     'latitude': value['geometry']['coordinates'][1],
                     'depth': value['geometry']['coordinates'][2]
                 }
 
                 # Update properties with geometry
-                properties.update(geometry)
+                #properties.update(geometry)
                 data.append(properties)
 
             return data
@@ -205,63 +205,161 @@ class EarthquakeDataFrameCreation:
         except Exception as e:
             self.logger.error('An error occurred while processing data: %s', e)
 
-
     def convert_to_dataframe(self):
-        """
-        :return: final data frame
-        """
         try:
             data = self.process_data()
 
             schema = StructType([
-                StructField("mag", FloatType(), True),
-                StructField("place", StringType(), True),
-                StructField("time", StringType(), True),
-                StructField("updated", StringType(), True),
-                StructField("tz", StringType(), True),
-                StructField("url", StringType(), True),
-                StructField("detail", StringType(), True),
-                StructField("felt", IntegerType(), True),
-                StructField("cdi", FloatType(), True),
-                StructField("mmi", FloatType(), True),
-                StructField("alert", StringType(), True),
-                StructField("status", StringType(), True),
-                StructField("tsunami", IntegerType(), True),
-                StructField("sig", IntegerType(), True),
-                StructField("net", StringType(), True),
-                StructField("code", StringType(), True),
-                StructField("ids", StringType(), True),
-                StructField("sources", StringType(), True),
-                StructField("types", StringType(), True),
-                StructField("nst", IntegerType(), True),
-                StructField("dmin", FloatType(), True),
-                StructField("rms", FloatType(), True),
-                StructField("gap", FloatType(), True),
-                StructField("magType", StringType(), True),
-                StructField("type", StringType(), True),
-                StructField("title", StringType(), True),
-                StructField("longitude", FloatType(), True),
-                StructField("latitude", FloatType(), True),
-                StructField("depth", FloatType(), True)
-            ])
+                    StructField("mag", FloatType(), True),
+                    StructField("place", StringType(), True),
+                    StructField("time", StringType(), True),
+                    StructField("updated", StringType(), True),
+                    StructField("tz", StringType(), True),
+                    StructField("url", StringType(), True),
+                    StructField("detail", StringType(), True),
+                    StructField("felt", IntegerType(), True),
+                    StructField("cdi", FloatType(), True),
+                    StructField("mmi", FloatType(), True),
+                    StructField("alert", StringType(), True),
+                    StructField("status", StringType(), True),
+                    StructField("tsunami", IntegerType(), True),
+                    StructField("sig", IntegerType(), True),
+                    StructField("net", StringType(), True),
+                    StructField("code", StringType(), True),
+                    StructField("ids", StringType(), True),
+                    StructField("sources", StringType(), True),
+                    StructField("types", StringType(), True),
+                    StructField("nst", IntegerType(), True),
+                    StructField("dmin", FloatType(), True),
+                    StructField("rms", FloatType(), True),
+                    StructField("gap", FloatType(), True),
+                    StructField("magType", StringType(), True),
+                    StructField("type", StringType(), True),
+                    StructField("title", StringType(), True),
+                    StructField("geometry", StructType([
+                        StructField("longitude", FloatType(), True),
+                        StructField("latitude", FloatType(), True),
+                        StructField("depth", FloatType(), True)
+                    ]), True)
+                ])
 
             processed_data = []
             for entry in data:
                 processed_entry = {}
                 for key, value in entry.items():
-                    # Convert fields to float where necessary
-                    if key in ['mag', 'cdi', 'mmi', 'dmin', 'rms', 'gap', 'depth']:
+                        # Convert fields to float where necessary
+                    if key in ['mag', 'cdi', 'mmi', 'dmin', 'rms', 'gap']:
                         processed_entry[key] = float(value) if value is not None else None
+                    elif key == 'geometry':
+                            # Add geometry data if available
+                        processed_entry['geometry'] = {
+                                'longitude': float(value['longitude']) if value['longitude'] is not None else None,
+                                'latitude': float(value['latitude']) if value['latitude'] is not None else None,
+                                'depth': float(value['depth']) if value['depth'] is not None else None
+                            }
                     else:
                         processed_entry[key] = value
-                processed_data.append(processed_entry)
+                    processed_data.append(processed_entry)
 
-            # Create Spark DataFrame
+                # Create Spark DataFrame
             df = self.spark.createDataFrame(processed_data, schema)
             self.logger.info('DataFrame created successfully with %d records', df.count())
             return df
         except Exception as e:
             self.logger.error('An error occurred while converting data to DataFrame: %s', e)
+
+        # """
+        # :return: final data frame
+        # """
+        # try:
+        #     data = self.process_data()
+
+            # schema = StructType([
+            #     StructField("mag", FloatType(), True),
+            #     StructField("place", StringType(), True),
+            #     StructField("time", StringType(), True),
+            #     StructField("updated", StringType(), True),
+            #     StructField("tz", StringType(), True),
+            #     StructField("url", StringType(), True),
+            #     StructField("detail", StringType(), True),
+            #     StructField("felt", IntegerType(), True),
+            #     StructField("cdi", FloatType(), True),
+            #     StructField("mmi", FloatType(), True),
+            #     StructField("alert", StringType(), True),
+            #     StructField("status", StringType(), True),
+            #     StructField("tsunami", IntegerType(), True),
+            #     StructField("sig", IntegerType(), True),
+            #     StructField("net", StringType(), True),
+            #     StructField("code", StringType(), True),
+            #     StructField("ids", StringType(), True),
+            #     StructField("sources", StringType(), True),
+            #     StructField("types", StringType(), True),
+            #     StructField("nst", IntegerType(), True),
+            #     StructField("dmin", FloatType(), True),
+            #     StructField("rms", FloatType(), True),
+            #     StructField("gap", FloatType(), True),
+            #     StructField("magType", StringType(), True),
+            #     StructField("type", StringType(), True),
+            #     StructField("title", StringType(), True),
+            #     StructField("longitude", FloatType(), True),
+            #     StructField("latitude", FloatType(), True),
+            #     StructField("depth", FloatType(), True)
+            # ])
+
+        #
+        #     schema = StructType([
+        #         StructField("mag", FloatType(), True),
+        #         StructField("place", StringType(), True),
+        #         StructField("time", StringType(), True),
+        #         StructField("updated", StringType(), True),
+        #         StructField("tz", StringType(), True),
+        #         StructField("url", StringType(), True),
+        #         StructField("detail", StringType(), True),
+        #         StructField("felt", IntegerType(), True),
+        #         StructField("cdi", FloatType(), True),
+        #         StructField("mmi", FloatType(), True),
+        #         StructField("alert", StringType(), True),
+        #         StructField("status", StringType(), True),
+        #         StructField("tsunami", IntegerType(), True),
+        #         StructField("sig", IntegerType(), True),
+        #         StructField("net", StringType(), True),
+        #         StructField("code", StringType(), True),
+        #         StructField("ids", StringType(), True),
+        #         StructField("sources", StringType(), True),
+        #         StructField("types", StringType(), True),
+        #         StructField("nst", IntegerType(), True),
+        #         StructField("dmin", FloatType(), True),
+        #         StructField("rms", FloatType(), True),
+        #         StructField("gap", FloatType(), True),
+        #         StructField("magType", StringType(), True),
+        #         StructField("type", StringType(), True),
+        #         StructField("title", StringType(), True),
+        #         StructField("geometry", StructType([
+        #             StructField("longitude", FloatType(), True),
+        #             StructField("latitude", FloatType(), True),
+        #             StructField("depth", FloatType(), True)
+        #         ]), True)
+        #     ])
+        #
+        #     processed_data = []
+        #     for entry in data:
+        #         processed_entry = {}
+        #         for key, value in entry.items():
+        #             # Convert fields to float where necessary
+        #             if key in ['mag', 'cdi', 'mmi', 'dmin', 'rms', 'gap']:
+        #                 processed_entry[key] = float(value) if value is not None else None
+        #             else:
+        #                 processed_entry[key] = value
+        #         processed_data.append(processed_entry)
+        #
+        #
+        #
+        #     # Create Spark DataFrame
+        #     df = self.spark.createDataFrame(processed_data, schema)
+        #     self.logger.info('DataFrame created successfully with %d records', df.count())
+        #     return df
+        # except Exception as e:
+        #     self.logger.error('An error occurred while converting data to DataFrame: %s', e)
 
 class Transformation:
 
