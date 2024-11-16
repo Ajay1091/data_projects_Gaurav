@@ -14,8 +14,8 @@ from google.cloud import bigquery
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
 from apache_beam.io.gcp.gcsio import GcsIO
-import pyarrow as pa
-import pyarrow.parquet as pq
+import pyarrow  #as pa
+#import pyarrow.parquet as pq
 import io
 import json
 import os
@@ -28,13 +28,13 @@ import re
 ############# setup some comman variables #############
 
 ## date str
-date_str = datetime.now().strftime('%Y%m%d')
+date_str = datetime.now().strftime('%Y%m%d') + 'daily'
 
 ## google service account key
 GOOGLE_APPLICATION_CREDENTIALS = r'C:\Users\HP\Desktop\data_projects\earthquake\key\delta-compass-440906-dca1fe6ea297.json'
 
 ## url for monthly basis
-URL_MONTH = r'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson'
+URL_MONTH = r'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson'
 
 ### GCP storage Bucket variables
 PROJECT_NAME = 'delta-compass-440906'
@@ -49,8 +49,8 @@ STAGGING = f'gs://{BUCKET_NAME}/stagging'
 TEMP = f'gs://{BUCKET_NAME}/temp'
 
 ## raw file gcs path
-RAW_LAYER_PATH = f'gs://{BUCKET_NAME}/raw_layer_final/{date_str}'
-RAW_LAYER_PATH_READ = f'gs://{BUCKET_NAME}/raw_layer_final/{date_str}.json'
+RAW_LAYER_PATH = f'gs://{BUCKET_NAME}/raw_layer_final/daily{date_str}'
+RAW_LAYER_PATH_READ = f'gs://{BUCKET_NAME}/raw_layer_final/daily{date_str}.json'
 
 ### parquate schema
 CLEAN_DATA_PARQUTE_SCHEMA = pyarrow.schema([
@@ -88,7 +88,7 @@ CLEAN_DATA_PARQUTE_SCHEMA = pyarrow.schema([
 ])
 
 # for silver layer path
-WRITE_PARQUATE = f'gs://{BUCKET_NAME}/silver_layer_final/{date_str}'
+WRITE_PARQUATE = f'gs://{BUCKET_NAME}/silver_layer_final/daily{date_str}'
 
 ## bigquary variables
 PROJECT_ID = 'delta-compass-440906'
@@ -239,7 +239,6 @@ def transformation(element):
                 "insert_date": values.get("insert_date")
             }
 
-
             yield earthquake_dic
         except Exception as e:
             logging.error(f"Error processing element: {e}")
@@ -260,7 +259,7 @@ if __name__ == "__main__":
         start_time_outer = datetime.utcnow()  # Start time for entire pipeline
 
         # Set environment variable for Google credentials
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = GOOGLE_APPLICATION_CREDENTIALS
+        # os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = GOOGLE_APPLICATION_CREDENTIALS
         options = PipelineOptions()
 
         # Configure Google Cloud options
@@ -363,15 +362,14 @@ if __name__ == "__main__":
                 # Step 3d: Write transformed data to BigQuery
                 try:
                     start_time = datetime.utcnow()
-                    bq_write = (
-                        transform_data
-                        | "Write to BigQuery" >> beam.io.WriteToBigQuery(
-                            table=TABLE,
-                            schema='SCHEMA_AUTODETECT',
-                            write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-                            create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED
-                        )
-                    )
+
+                    bq_write =  (transform_data
+                     | "Write to BigQuery" >> beam.io.WriteToBigQuery(
+                                table=TABLE,
+                                schema='SCHEMA_AUTODETECT',
+                                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
+                     )
                     end_time = datetime.utcnow()
                     logger.info("Data written to BigQuery successfully.")
                     audit_event(date_str, "EarthquakePipeline", "Write to BigQuery", start_time, end_time, "Success", None)
